@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ICEMAN — Rate the 6 God</title>
+<meta name="description" content="Rate every Drake album before ICEMAN drops May 15, 2026"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+
+:root{
+  --deep:#060d18;
+  --mid:#0a1829;
+  --card:#0d2038;
+  --ice1:#d6eeff;
+  --ice2:#8ecfff;
+  --ice3:#4aa8f0;
+  --ice4:#1a6bbf;
+  --muted:#5a8fb0;
+  --txt:#daeeff;
+  --border:rgba(80,160,220,0.16);
+  --border-h:rgba(100,190,255,0.35);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  min-height:100vh;
+  background: var(--deep);
+  font-family:'DM Sans',sans-serif;
+  color:var(--txt);
+  overflow-x:hidden;
+}
+
+/* Ambient background glow */
+body::before {
+  content:'';
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(30,100,200,0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 10% 60%, rgba(20,80,160,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 90% 80%, rgba(10,60,140,0.06) 0%, transparent 60%);
+}
+
+/* ── HEADER ── */
+.header {
+  position:relative;overflow:hidden;
+  background:linear-gradient(180deg, #08111f 0%, #060d18 100%);
+  border-bottom:1px solid var(--border);
+  padding:40px 24px 28px;
+  text-align:center;
+  z-index:1;
+}
+
+/* floating crystals */
+.crystals { position:absolute;inset:0;pointer-events:none;overflow:hidden; }
+.crystal {
+  position:absolute;
+  animation:cdrift linear infinite;
+  opacity:0;
+  user-select:none;
+}
+@keyframes cdrift {
+  0%   { transform:translateY(-20px) rotate(0deg) scale(0.6); opacity:0; }
+  8%   { opacity:1; }
+  88%  { opacity:0.3; }
+  100% { transform:translateY(210px) rotate(380deg) scale(1.1); opacity:0; }
+}
+
+/* ICEMAN logo image */
+.iceman-logo-wrap {
+  position:relative;
+  display:inline-block;
+  margin-bottom:20px;
+  z-index:2;
+}
+.iceman-logo-img {
+  width:min(580px, 90vw);
+  height:auto;
+  display:block;
+  /* Trim the black bg visually using mix-blend-mode — works on dark backgrounds */
+  mix-blend-mode: lighten;
+  filter: drop-shadow(0 0 30px rgba(100,200,255,0.45))
+          drop-shadow(0 0 60px rgba(60,140,220,0.2));
+}
+
+/* badge */
+.iceman-badge {
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(80,160,255,0.08);
+  border:1px solid rgba(100,200,255,0.25);
+  border-radius:100px;padding:6px 18px;
+  font-size:12px;color:var(--ice2);font-weight:500;
+  margin-bottom:22px;letter-spacing:0.5px;
+  position:relative;z-index:2;
+}
+.pulse {
+  width:6px;height:6px;border-radius:50%;
+  background:var(--ice2);flex-shrink:0;
+  animation:pulse 1.6s infinite;
+}
+@keyframes pulse {
+  0%,100%{opacity:1;transform:scale(1);}
+  50%{opacity:0.25;transform:scale(0.65);}
+}
+
+/* countdown */
+.countdown-bar {
+  display:inline-flex;align-items:center;gap:18px;
+  background:rgba(6,18,40,0.75);
+  border:1px solid rgba(80,180,255,0.22);
+  border-radius:100px;padding:10px 26px;
+  position:relative;z-index:2;
+  backdrop-filter:blur(8px);
+}
+.cdu { text-align:center; }
+.cdn {
+  font-family:'Bebas Neue',sans-serif;font-size:30px;
+  color:#fff;line-height:1;display:block;
+  text-shadow:0 0 14px rgba(100,200,255,0.7);
+}
+.cdl { font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase; }
+.cdsep { color:var(--ice2);font-size:24px;opacity:0.4;margin-top:-7px; }
+
+/* progress */
+.prog-wrap {
+  height:2px;background:rgba(255,255,255,0.05);border-radius:2px;
+  margin:16px auto 0;max-width:400px;overflow:hidden;
+}
+.prog-fill {
+  height:100%;
+  background:linear-gradient(90deg, var(--ice4), var(--ice2));
+  border-radius:2px;transition:width 0.5s ease;width:0%;
+}
+.prog-label { font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:0.3px; }
+
+/* ── TABS ── */
+.tabs {
+  display:flex;
+  border-bottom:1px solid var(--border);
+  background:rgba(6,12,24,0.96);
+  position:sticky;top:0;z-index:100;
+  backdrop-filter:blur(10px);
+}
+.tab {
+  flex:1;padding:14px;font-size:13px;font-weight:500;text-align:center;
+  cursor:pointer;color:var(--muted);
+  border:none;border-bottom:2px solid transparent;
+  background:none;font-family:'DM Sans',sans-serif;
+  transition:color 0.2s,border-color 0.2s;
+  letter-spacing:0.3px;
+}
+.tab.active { color:var(--ice1);border-bottom-color:var(--ice3); }
+.tab:hover:not(.active) { color:var(--ice2); }
+
+/* ── PANELS ── */
+.panel { display:none;padding:28px 24px;max-width:1100px;margin:0 auto; }
+.panel.active { display:block; }
+
+/* ── STATS ── */
+.stat-row {
+  display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;
+}
+.stat-card {
+  background:rgba(13,32,56,0.7);
+  border:1px solid var(--border);
+  border-radius:10px;padding:16px;text-align:center;
+}
+.stat-val {
+  font-family:'Bebas Neue',sans-serif;font-size:30px;
+  color:var(--ice2);line-height:1;margin-bottom:4px;
+  text-shadow:0 0 16px rgba(80,180,255,0.4);
+}
+.stat-lbl { font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px; }
+
+/* ── ALBUM GRID ── */
+.album-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(152px,1fr));
+  gap:14px;
+}
+
+.album-card {
+  background:rgba(10,24,44,0.85);
+  border:1px solid var(--border);
+  border-radius:12px;padding:12px;
+  transition:border-color 0.25s, box-shadow 0.25s, transform 0.2s;
+  cursor:default;
+}
+.album-card:hover {
+  transform:translateY(-2px);
+  border-color:rgba(80,160,220,0.3);
+}
+.album-card.rated {
+  border-color:rgba(80,190,255,0.38);
+  box-shadow:0 0 16px rgba(60,150,255,0.12);
+}
+
+/* cover */
+.cover-wrap {
+  width:100%;aspect-ratio:1;
+  border-radius:8px;margin-bottom:11px;
+  overflow:hidden;background:#071525;
+  position:relative;
+}
+.cover-wrap img {
+  width:100%;height:100%;object-fit:cover;display:block;border-radius:8px;
+  transition:transform 0.3s;
+}
+.album-card:hover .cover-wrap img { transform:scale(1.04); }
+
+.cover-fallback {
+  display:none;width:100%;height:100%;
+  flex-direction:column;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:13px;color:var(--muted);
+  text-align:center;padding:10px;line-height:1.4;letter-spacing:1px;gap:5px;
+}
+.cover-fallback .fb-year { font-size:10px;color:rgba(80,160,200,0.4); }
+
+.album-title {
+  font-size:12px;font-weight:500;color:var(--txt);
+  margin-bottom:2px;line-height:1.3;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.album-meta { font-size:10px;color:var(--muted);margin-bottom:10px; }
+.album-type { color:rgba(80,160,200,0.45);font-size:9px; }
+
+.rating-row { display:flex;align-items:center;gap:7px; }
+.rating-input {
+  width:56px;
+  background:rgba(80,160,255,0.07);
+  border:1px solid rgba(80,190,255,0.2);
+  border-radius:6px;color:var(--ice1);
+  font-size:15px;font-weight:500;padding:5px 7px;
+  font-family:'Bebas Neue',sans-serif;letter-spacing:1px;
+  -moz-appearance:textfield;
+  transition:border-color 0.2s, box-shadow 0.2s;
+}
+.rating-input::-webkit-outer-spin-button,
+.rating-input::-webkit-inner-spin-button { -webkit-appearance:none; }
+.rating-input:focus {
+  outline:none;border-color:var(--ice3);
+  box-shadow:0 0 0 3px rgba(70,160,240,0.14);
+}
+.rating-badge { font-size:10px;color:var(--muted); }
+.rated-dot {
+  width:6px;height:6px;border-radius:50%;
+  background:var(--ice3);margin-left:auto;display:none;
+  box-shadow:0 0 8px rgba(70,180,255,0.7);
+}
+.album-card.rated .rated-dot { display:block; }
+
+/* ── TIER LIST ── */
+.tier-view { display:flex;flex-direction:column;gap:8px; }
+.tier-row {
+  display:flex;align-items:stretch;min-height:68px;
+  border-radius:10px;overflow:hidden;
+  border:1px solid rgba(80,160,200,0.1);
+}
+.tier-label {
+  width:52px;min-width:52px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;
+}
+.tier-albums {
+  flex:1;display:flex;flex-wrap:wrap;gap:7px;
+  padding:10px 14px;align-items:center;
+  background:rgba(8,20,40,0.9);
+}
+.tier-chip {
+  background:rgba(16,42,80,0.9);
+  border:1px solid rgba(80,160,200,0.15);
+  border-radius:7px;padding:5px 11px;
+  font-size:11px;font-weight:500;
+  display:flex;align-items:center;gap:8px;color:var(--txt);
+}
+.tier-chip img {
+  width:26px;height:26px;border-radius:4px;object-fit:cover;flex-shrink:0;
+}
+.tier-chip-score {
+  font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--ice2);
+}
+.tier-empty { font-size:12px;color:#162840;padding:4px 8px; }
+
+.unrated-section {
+  margin-top:20px;padding-top:16px;
+  border-top:1px solid rgba(80,160,200,0.07);
+}
+.unrated-label {
+  font-size:10px;color:#162840;margin-bottom:9px;
+  letter-spacing:2px;text-transform:uppercase;
+}
+.unrated-chips { display:flex;flex-wrap:wrap;gap:6px; }
+.unrated-chip {
+  background:rgba(10,24,44,0.5);
+  border:1px solid rgba(80,160,200,0.07);
+  border-radius:6px;padding:3px 10px;
+  font-size:11px;color:#1e3a5a;
+}
+
+/* ── BUTTONS ── */
+.cta-row {
+  display:flex;gap:10px;margin-top:28px;
+  justify-content:center;flex-wrap:wrap;
+}
+.btn {
+  background:linear-gradient(135deg, var(--ice4), var(--ice3));
+  color:#fff;border:none;border-radius:9px;
+  padding:12px 26px;font-size:13px;font-weight:500;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  transition:opacity 0.15s, transform 0.1s;
+  box-shadow:0 0 20px rgba(26,100,200,0.3);
+  letter-spacing:0.2px;
+}
+.btn:hover { opacity:0.84; }
+.btn:active { transform:scale(0.97); }
+.btn-ghost {
+  background:transparent;color:var(--muted);
+  border:1px solid rgba(80,160,200,0.2);box-shadow:none;
+}
+.btn-ghost:hover { color:var(--txt);border-color:var(--border-h);opacity:1; }
+
+/* ── FOOTER ── */
+footer {
+  text-align:center;padding:24px;
+  font-size:10px;color:rgba(80,130,170,0.28);
+  letter-spacing:2px;text-transform:uppercase;
+  position:relative;z-index:1;
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:520px){
+  .album-grid { grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; }
+  .panel { padding:18px 14px; }
+  .countdown-bar { gap:10px;padding:8px 16px; }
+  .cdn { font-size:22px; }
+  .stat-row { gap:8px; }
+  .stat-val { font-size:22px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header class="header">
+  <div class="crystals" id="crystals"></div>
+
+  <div class="iceman-badge">
+    <span class="pulse"></span> ICEMAN — Dropping May 15, 2026
+  </div>
+
+  <div class="iceman-logo-wrap">
+    <img
+      class="iceman-logo-img"
+      src="images/iceman-logo.png"
+      alt="ICEMAN"
+    />
+  </div>
+
+  <div class="countdown-bar">
+    <div class="cdu"><span class="cdn" id="cd-d">--</span><span class="cdl">Days</span></div>
+    <span class="cdsep">:</span>
+    <div class="cdu"><span class="cdn" id="cd-h">--</span><span class="cdl">Hrs</span></div>
+    <span class="cdsep">:</span>
+    <div class="cdu"><span class="cdn" id="cd-m">--</span><span class="cdl">Min</span></div>
+    <span class="cdsep">:</span>
+    <div class="cdu"><span class="cdn" id="cd-s">--</span><span class="cdl">Sec</span></div>
+  </div>
+
+  <div class="prog-wrap"><div class="prog-fill" id="prog-fill"></div></div>
+  <p class="prog-label" id="prog-label">0 of 16 albums rated</p>
+</header>
+
+<!-- ── TABS ── -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('rate')">Rate Albums</button>
+  <button class="tab"        onclick="switchTab('tier')">My Tier List</button>
+</div>
+
+<!-- ── RATE PANEL ── -->
+<div class="panel active" id="panel-rate">
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-val" id="s-rated">0/16</div>
+      <div class="stat-lbl">Rated</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="s-avg">—</div>
+      <div class="stat-lbl">Avg Score</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="s-top">—</div>
+      <div class="stat-lbl">Top Pick</div>
+    </div>
+  </div>
+
+  <div class="album-grid" id="album-grid"></div>
+
+  <div class="cta-row">
+    <button class="btn"       onclick="switchTab('tier')">View Tier List ↗</button>
+    <button class="btn btn-ghost" onclick="clearRatings()">Reset All</button>
+  </div>
+</div>
+
+<!-- ── TIER PANEL ── -->
+<div class="panel" id="panel-tier">
+  <div class="tier-view" id="tier-view"></div>
+  <div class="cta-row">
+    <button class="btn" onclick="switchTab('rate')">← Back to Rating</button>
+  </div>
+</div>
+
+<footer>Drake Discography Challenge &nbsp;·&nbsp; ICEMAN 2026</footer>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+const ALBUMS = [
+  { id:'sfg',     title:'So Far Gone',              year:2009, type:'EP',        img:'images/sfg.jpg' },
+  { id:'tml',     title:'Thank Me Later',            year:2010, type:'Album',     img:'images/tml.jpg' },
+  { id:'tc',      title:'Take Care',                 year:2011, type:'Album',     img:'images/tc.jpg' },
+  { id:'nwts',    title:'Nothing Was the Same',      year:2013, type:'Album',     img:'images/nwts.jpg' },
+  { id:'iyrtitl', title:"If You're Reading This…",  year:2015, type:'Mixtape',   img:'images/iyrtitl.jpg' },
+  { id:'watba',   title:'What a Time to Be Alive',   year:2015, type:'Collab',    img:'images/watba.jpg' },
+  { id:'views',   title:'Views',                     year:2016, type:'Album',     img:'images/views.jpg' },
+  { id:'more',    title:'More Life',                 year:2017, type:'Playlist',  img:'images/more.jpg' },
+  { id:'scorpion',title:'Scorpion',                  year:2018, type:'Album',     img:'images/scorpion.jpg' },
+  { id:'cp',      title:'Care Package',              year:2019, type:'Comp.',     img:'images/cp.jpg' },
+  { id:'dldt',    title:'Dark Lane Demo Tapes',      year:2020, type:'Mixtape',   img:'images/dldt.jpg' },
+  { id:'clb',     title:'Certified Lover Boy',       year:2021, type:'Album',     img:'images/clb.jpg' },
+  { id:'hn',      title:'Honestly, Nevermind',       year:2022, type:'Album',     img:'images/hn.jpg' },
+  { id:'hl',      title:'Her Loss',                  year:2022, type:'Collab',    img:'images/hl.jpg' },
+  { id:'fatd',    title:'For All the Dogs',          year:2023, type:'Album',     img:'images/fatd.jpg' },
+  { id:'sssu',    title:'Some Sexy Songs 4 U',       year:2025, type:'Collab',    img:'images/sssu.jpg' },
+];
+
+const TIERS = [
+  { label:'S', range:[9,10],  bg:'rgba(6,20,8,0.96)',   text:'#6ef09a', border:'rgba(60,220,100,0.35)' },
+  { label:'A', range:[8,9],   bg:'rgba(4,16,36,0.96)',  text:'#5ec8f8', border:'rgba(60,180,255,0.35)' },
+  { label:'B', range:[7,8],   bg:'rgba(10,14,42,0.96)', text:'#96a8ff', border:'rgba(120,140,255,0.28)' },
+  { label:'C', range:[6,7],   bg:'rgba(16,10,36,0.96)', text:'#cc96ff', border:'rgba(180,110,255,0.25)' },
+  { label:'D', range:[5,6],   bg:'rgba(26,12,6,0.96)',  text:'#f0b860', border:'rgba(230,160,50,0.25)' },
+  { label:'F', range:[0,5],   bg:'rgba(30,6,6,0.96)',   text:'#f06060', border:'rgba(230,70,70,0.25)' },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+let ratings = {};
+try {
+  const s = localStorage.getItem('drake_iceman_v4');
+  if (s) ratings = JSON.parse(s);
+} catch(e) {}
+
+function save() {
+  try { localStorage.setItem('drake_iceman_v4', JSON.stringify(ratings)); } catch(e) {}
+}
+
+// ── BUILD GRID ────────────────────────────────────────────────────────────
+function buildGrid() {
+  const grid = document.getElementById('album-grid');
+  grid.innerHTML = '';
+
+  ALBUMS.forEach(a => {
+    const val = ratings[a.id] ?? '';
+    const card = document.createElement('div');
+    card.className = 'album-card' + (val !== '' ? ' rated' : '');
+    card.id = 'card-' + a.id;
+
+    card.innerHTML = `
+      <div class="cover-wrap">
+        <img
+          src="${a.img}"
+          alt="${a.title}"
+          loading="lazy"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+        />
+        <div class="cover-fallback">
+          <span>${a.title}</span>
+          <span class="fb-year">${a.year}</span>
+        </div>
+      </div>
+      <div class="album-title" title="${a.title}">${a.title}</div>
+      <div class="album-meta">${a.year} <span class="album-type">· ${a.type}</span></div>
+      <div class="rating-row">
+        <input
+          class="rating-input"
+          type="number" min="0" max="10" step="0.1"
+          placeholder="—"
+          value="${val}"
+          data-id="${a.id}"
+        />
+        <span class="rating-badge">/ 10</span>
+        <div class="rated-dot"></div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  grid.querySelectorAll('.rating-input').forEach(inp => {
+    inp.addEventListener('input', function() {
+      const id = this.dataset.id;
+      let v = parseFloat(this.value);
+      if (isNaN(v)) {
+        delete ratings[id];
+      } else {
+        v = Math.min(10, Math.max(0, Math.round(v * 10) / 10));
+        ratings[id] = v;
+      }
+      save();
+      document.getElementById('card-' + id)
+        .classList.toggle('rated', ratings[id] !== undefined);
+      updateStats();
+    });
+  });
+
+  updateStats();
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────
+function updateStats() {
+  const scored = ALBUMS.filter(a => ratings[a.id] !== undefined);
+  const count = scored.length, total = ALBUMS.length;
+
+  document.getElementById('s-rated').textContent = count + '/' + total;
+
+  if (count === 0) {
+    document.getElementById('s-avg').textContent = '—';
+    document.getElementById('s-top').textContent = '—';
+  } else {
+    const avg = scored.reduce((s, a) => s + ratings[a.id], 0) / count;
+    document.getElementById('s-avg').textContent = avg.toFixed(1);
+    const top = [...scored].sort((a, b) => ratings[b.id] - ratings[a.id])[0];
+    const words = top.title.replace('…','').split(' ');
+    document.getElementById('s-top').textContent = words.slice(0, 2).join(' ');
+  }
+
+  document.getElementById('prog-fill').style.width =
+    (count / total * 100).toFixed(1) + '%';
+  document.getElementById('prog-label').textContent =
+    count + ' of ' + total + ' albums rated';
+}
+
+// ── TIER LIST ─────────────────────────────────────────────────────────────
+function buildTier() {
+  const view = document.getElementById('tier-view');
+  view.innerHTML = '';
+
+  TIERS.forEach(tier => {
+    const [lo, hi] = tier.range;
+    const albums = ALBUMS
+      .filter(a => {
+        const r = ratings[a.id];
+        return r !== undefined && r >= lo && (hi === 10 ? r <= 10 : r < hi);
+      })
+      .sort((a, b) => ratings[b.id] - ratings[a.id]);
+
+    const row = document.createElement('div');
+    row.className = 'tier-row';
+    row.innerHTML = `
+      <div class="tier-label"
+        style="background:${tier.bg};color:${tier.text};border-right:1px solid ${tier.border};">
+        ${tier.label}
+      </div>
+      <div class="tier-albums">
+        ${albums.length === 0
+          ? '<span class="tier-empty">—</span>'
+          : albums.map(a => `
+              <div class="tier-chip">
+                <img src="${a.img}" alt="${a.title}"
+                  onerror="this.style.display='none'"/>
+                ${a.title.length > 24 ? a.title.substring(0, 22) + '…' : a.title}
+                <span class="tier-chip-score">${ratings[a.id].toFixed(1)}</span>
+              </div>`).join('')
+        }
+      </div>`;
+    view.appendChild(row);
+  });
+
+  // Unrated
+  const unrated = ALBUMS.filter(a => ratings[a.id] === undefined);
+  if (unrated.length > 0) {
+    const ur = document.createElement('div');
+    ur.className = 'unrated-section';
+    ur.innerHTML = `
+      <div class="unrated-label">Not yet rated</div>
+      <div class="unrated-chips">
+        ${unrated.map(a =>
+          `<div class="unrated-chip">${a.title}</div>`).join('')}
+      </div>`;
+    view.appendChild(ur);
+  }
+}
+
+// ── TAB SWITCHING ─────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) =>
+    t.classList.toggle('active',
+      (i === 0 && tab === 'rate') || (i === 1 && tab === 'tier')));
+  document.getElementById('panel-rate')
+    .classList.toggle('active', tab === 'rate');
+  document.getElementById('panel-tier')
+    .classList.toggle('active', tab === 'tier');
+  if (tab === 'tier') buildTier();
+}
+
+// ── RESET ─────────────────────────────────────────────────────────────────
+function clearRatings() {
+  if (!confirm('Clear all your ratings?')) return;
+  ratings = {};
+  save();
+  buildGrid();
+}
+
+// ── COUNTDOWN ─────────────────────────────────────────────────────────────
+function updateCountdown() {
+  const diff = new Date('2026-05-15T00:00:00') - new Date();
+  if (diff <= 0) {
+    ['cd-d','cd-h','cd-m','cd-s'].forEach(id =>
+      document.getElementById(id).textContent = '00');
+    return;
+  }
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  document.getElementById('cd-d').textContent = String(d).padStart(2,'0');
+  document.getElementById('cd-h').textContent = String(h).padStart(2,'0');
+  document.getElementById('cd-m').textContent = String(m).padStart(2,'0');
+  document.getElementById('cd-s').textContent = String(s).padStart(2,'0');
+}
+
+// ── ICE CRYSTALS ──────────────────────────────────────────────────────────
+function spawnCrystals() {
+  const c = document.getElementById('crystals');
+  const shapes = ['❄','✦','◆','⬡','❆','✧'];
+  for (let i = 0; i < 20; i++) {
+    const el = document.createElement('div');
+    el.className = 'crystal';
+    el.textContent = shapes[Math.floor(Math.random() * shapes.length)];
+    el.style.left = Math.random() * 100 + '%';
+    el.style.top = Math.random() * 85 + '%';
+    el.style.animationDelay = (Math.random() * 12) + 's';
+    el.style.animationDuration = (8 + Math.random() * 9) + 's';
+    el.style.fontSize = (10 + Math.random() * 14) + 'px';
+    const alpha = 0.1 + Math.random() * 0.13;
+    el.style.color = `rgba(160,220,255,${alpha})`;
+    c.appendChild(el);
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+buildGrid();
+spawnCrystals();
+updateCountdown();
+setInterval(updateCountdown, 1000);
+</script>
+</body>
+</html>
