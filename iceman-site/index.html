@@ -68,7 +68,7 @@ body::before{
   z-index:2;
 }
 .iceman-logo-img{
-  width:min(660px,92vw);
+  width:min(420px,75vw);
   height:auto;
   display:block;
   margin:0 auto;
@@ -126,6 +126,7 @@ body::before{
 .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px;}
 .stat-card{background:rgba(13,32,56,0.7);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
 .stat-val{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--ice2);line-height:1;margin-bottom:3px;text-shadow:0 0 14px rgba(80,180,255,0.4);}
+#s-top{min-height:42px;display:flex;align-items:center;justify-content:center;text-shadow:none;}
 .stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;}
 
 /* ── ALBUM GRID — exactly 4 columns ── */
@@ -348,12 +349,12 @@ function updateStats(){
   document.getElementById('s-rated').textContent=count+'/'+total;
   if(count===0){
     document.getElementById('s-avg').textContent='—';
-    document.getElementById('s-top').textContent='—';
+    document.getElementById('s-top').innerHTML='—';
   } else {
     const avg=scored.reduce((s,a)=>s+ratings[a.id],0)/count;
     document.getElementById('s-avg').textContent=avg.toFixed(1);
     const top=[...scored].sort((a,b)=>ratings[b.id]-ratings[a.id])[0];
-    document.getElementById('s-top').textContent=top.title.split(' ').slice(0,2).join(' ');
+    document.getElementById('s-top').innerHTML=`<img src="${top.img}" alt="${top.title}" title="${top.title} — ${ratings[top.id].toFixed(1)}" style="width:42px;height:42px;border-radius:6px;object-fit:cover;display:inline-block;vertical-align:middle;box-shadow:0 0 12px rgba(80,180,255,0.45);" onerror="this.outerHTML='${top.title.split(' ').slice(0,2).join(' ')}';"/>`;
   }
   document.getElementById('prog-fill').style.width=(count/total*100).toFixed(1)+'%';
   document.getElementById('prog-label').textContent=count+' of '+total+' albums rated';
