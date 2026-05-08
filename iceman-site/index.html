@@ -347,7 +347,7 @@ footer{text-align:center;padding:22px;font-size:10px;color:rgba(80,130,170,0.28)
   <div class="tier-view" id="tier-view"></div>
   <div class="cta-row">
     <button class="btn" onclick="shareLink()">🔗 Copy Share Link</button>
-    <button class="btn" onclick="downloadImage()">📸 Download Image</button>
+    <button class="btn" onclick="downloadImage()">📸 Save Image</button>
     <button class="btn btn-ghost" onclick="switchTab('rate')">← Back to Rating</button>
   </div>
 </div>
@@ -570,6 +570,10 @@ function shareLink(){
   } else { fallback(); }
 }
 
+function isMobile(){
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+}
+
 function downloadImage(){
   const scored=ALBUMS.filter(a=>ratings[a.id]!==undefined).length;
   if(scored===0){
@@ -593,14 +597,32 @@ function downloadImage(){
     }).then(canvas=>{
       document.body.classList.remove('capturing');
       canvas.toBlob(blob=>{
-        const link=document.createElement('a');
-        link.href=URL.createObjectURL(blob);
-        link.download='my-drake-tier-list.png';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(()=>URL.revokeObjectURL(link.href),1000);
-        showToast('Image downloaded!');
+        const filename='my-drake-tier-list.png';
+        const file=new File([blob],filename,{type:'image/png'});
+
+        // On mobile, prefer Web Share API → opens native share sheet
+        // (iOS: "Save Image" goes to Photos; Android: "Save to Gallery" / Photos)
+        const canShareFile = navigator.canShare && navigator.canShare({files:[file]});
+        if(isMobile() && navigator.share && canShareFile){
+          navigator.share({
+            files:[file],
+            title:'My Drake Tier List',
+            text:'My Drake tier list — rank the 6ix God',
+          }).then(()=>{
+            showToast('Shared!');
+          }).catch(err=>{
+            // User cancelled the share sheet — that's fine, no error
+            if(err && err.name!=='AbortError'){
+              console.error(err);
+              // Fall back to download if share fails for a real reason
+              triggerDownload(blob,filename);
+            }
+          });
+          return;
+        }
+
+        // Desktop (or older mobile browsers): standard download
+        triggerDownload(blob,filename);
       },'image/png');
     }).catch(err=>{
       document.body.classList.remove('capturing');
@@ -608,6 +630,17 @@ function downloadImage(){
       showToast('Image capture failed');
     });
   },120);
+}
+
+function triggerDownload(blob,filename){
+  const link=document.createElement('a');
+  link.href=URL.createObjectURL(blob);
+  link.download=filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+  showToast('Image downloaded!');
 }
 
 /* ── On load: check URL for shared ratings ── */
