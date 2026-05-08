@@ -25,6 +25,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500&family=Poppins:wght@600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 
@@ -229,6 +230,44 @@ body::before{
 .btn-ghost{background:transparent;color:var(--muted);border:1px solid rgba(80,160,200,0.2);box-shadow:none;}
 .btn-ghost:hover{color:var(--txt);border-color:var(--border-h);opacity:1;}
 
+/* ── SNAPSHOT SUMMARY ── */
+.snapshot{
+  background:linear-gradient(135deg,rgba(10,24,52,0.85),rgba(8,16,38,0.85));
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:18px 20px;
+  margin-bottom:16px;
+}
+.snap-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+.snap-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--ice1);}
+.snap-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.snap-stat{background:rgba(6,14,28,0.6);border:1px solid rgba(80,160,200,0.08);border-radius:8px;padding:10px;text-align:center;}
+.snap-stat-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--ice2);line-height:1;}
+.snap-stat-lbl{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-top:5px;}
+.snap-top-img{width:34px;height:34px;border-radius:5px;object-fit:cover;display:inline-block;vertical-align:middle;box-shadow:0 0 10px rgba(80,180,255,0.4);}
+@media(max-width:560px){
+  .snap-stats{grid-template-columns:repeat(2,1fr);}
+}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:linear-gradient(135deg,var(--ice4),var(--ice3));
+  color:#fff;padding:12px 22px;border-radius:9px;font-size:13px;font-weight:500;
+  box-shadow:0 6px 24px rgba(0,0,0,0.4),0 0 18px rgba(26,100,200,0.4);
+  z-index:1000;opacity:0;pointer-events:none;
+  transition:opacity 0.2s,transform 0.2s;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* hide UI chrome during snapshot capture */
+.capturing .tabs,
+.capturing .cta-row,
+.capturing footer,
+.capturing .countdown-bar,
+.capturing .prog-wrap,
+.capturing .prog-label{display:none!important;}
+
 footer{text-align:center;padding:22px;font-size:10px;color:rgba(80,130,170,0.28);letter-spacing:2px;text-transform:uppercase;position:relative;z-index:1;}
 
 /* ── RESPONSIVE ── */
@@ -294,11 +333,26 @@ footer{text-align:center;padding:22px;font-size:10px;color:rgba(80,130,170,0.28)
 </div>
 
 <div class="panel" id="panel-tier">
+  <div class="snapshot" id="snapshot">
+    <div class="snap-head">
+      <div class="snap-title">MY DRAKE TIER LIST</div>
+    </div>
+    <div class="snap-stats">
+      <div class="snap-stat"><div class="snap-stat-val" id="snap-rated">0/16</div><div class="snap-stat-lbl">Rated</div></div>
+      <div class="snap-stat"><div class="snap-stat-val" id="snap-avg">—</div><div class="snap-stat-lbl">Avg Score</div></div>
+      <div class="snap-stat"><div class="snap-stat-val" id="snap-top">—</div><div class="snap-stat-lbl">Highest Rated</div></div>
+      <div class="snap-stat"><div class="snap-stat-val" id="snap-elite">—</div><div class="snap-stat-lbl">Lowest Rated</div></div>
+    </div>
+  </div>
   <div class="tier-view" id="tier-view"></div>
   <div class="cta-row">
-    <button class="btn" onclick="switchTab('rate')">← Back to Rating</button>
+    <button class="btn" onclick="shareLink()">🔗 Copy Share Link</button>
+    <button class="btn" onclick="downloadImage()">📸 Download Image</button>
+    <button class="btn btn-ghost" onclick="switchTab('rate')">← Back to Rating</button>
   </div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <footer>Drake Discography Challenge &nbsp;·&nbsp; ICEMAN 2026</footer>
 
@@ -392,6 +446,7 @@ function updateStats(){
 }
 
 function buildTier(){
+  updateSnapshot();
   const view=document.getElementById('tier-view');
   view.innerHTML='';
   TIERS.forEach(tier=>{
@@ -439,6 +494,140 @@ function clearRatings(){
   ratings={};save();buildGrid();
 }
 
+function updateSnapshot(){
+  const scored=ALBUMS.filter(a=>ratings[a.id]!==undefined);
+  const count=scored.length,total=ALBUMS.length;
+  document.getElementById('snap-rated').textContent=count+'/'+total;
+  if(count===0){
+    document.getElementById('snap-avg').textContent='—';
+    document.getElementById('snap-top').innerHTML='—';
+    document.getElementById('snap-elite').innerHTML='—';
+  } else {
+    const avg=scored.reduce((s,a)=>s+ratings[a.id],0)/count;
+    document.getElementById('snap-avg').textContent=avg.toFixed(1);
+    const sorted=[...scored].sort((a,b)=>ratings[b.id]-ratings[a.id]);
+    const top=sorted[0];
+    const bot=sorted[sorted.length-1];
+    const imgHtml=(a)=>`<img class="snap-top-img" src="${a.img}" alt="${a.title}" title="${a.title} — ${ratings[a.id].toFixed(1)}" onerror="this.outerHTML='${a.title.split(' ').slice(0,2).join(' ')}';"/>`;
+    document.getElementById('snap-top').innerHTML=imgHtml(top);
+    document.getElementById('snap-elite').innerHTML=imgHtml(bot);
+  }
+}
+
+/* ── SHARE: encode/decode ratings in URL ── */
+// Compact format: each album = 2 chars in base-36 (00-2s = 0-100, "--" = unrated)
+// Order matches ALBUMS array, so we get exactly 32 chars total. Base-36 keeps 10.0 (=100) in 2 chars.
+function encodeRatings(){
+  return ALBUMS.map(a=>{
+    const r=ratings[a.id];
+    if(r===undefined) return '--';
+    const n=Math.round(r*10); // 0-100
+    return n.toString(36).padStart(2,'0');
+  }).join('');
+}
+function decodeRatings(str){
+  const out={};
+  if(!str || str.length!==ALBUMS.length*2) return null;
+  for(let i=0;i<ALBUMS.length;i++){
+    const chunk=str.substring(i*2,i*2+2);
+    if(chunk==='--') continue;
+    if(!/^[0-9a-z]{2}$/i.test(chunk)) return null;
+    const n=parseInt(chunk,36);
+    if(isNaN(n)||n<0||n>100) return null;
+    out[ALBUMS[i].id]=n/10;
+  }
+  return out;
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+function shareLink(){
+  const scored=ALBUMS.filter(a=>ratings[a.id]!==undefined).length;
+  if(scored===0){
+    showToast('Rate at least one album first!');
+    return;
+  }
+  const url=location.origin+location.pathname+'?r='+encodeRatings();
+  // Try modern clipboard API, fall back to textarea trick
+  const fallback=()=>{
+    const ta=document.createElement('textarea');
+    ta.value=url;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');showToast('Link copied to clipboard!');}
+    catch(e){prompt('Copy this link:',url);}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(url)
+      .then(()=>showToast('Link copied to clipboard!'))
+      .catch(fallback);
+  } else { fallback(); }
+}
+
+function downloadImage(){
+  const scored=ALBUMS.filter(a=>ratings[a.id]!==undefined).length;
+  if(scored===0){
+    showToast('Rate at least one album first!');
+    return;
+  }
+  if(typeof html2canvas==='undefined'){
+    showToast('Image library still loading — try again');
+    return;
+  }
+  showToast('Generating image…');
+  document.body.classList.add('capturing');
+  const target=document.getElementById('panel-tier');
+  // Small delay so the toast and class change render before capture
+  setTimeout(()=>{
+    html2canvas(target,{
+      backgroundColor:'#060d18',
+      scale:2,
+      useCORS:true,
+      logging:false,
+    }).then(canvas=>{
+      document.body.classList.remove('capturing');
+      canvas.toBlob(blob=>{
+        const link=document.createElement('a');
+        link.href=URL.createObjectURL(blob);
+        link.download='my-drake-tier-list.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+        showToast('Image downloaded!');
+      },'image/png');
+    }).catch(err=>{
+      document.body.classList.remove('capturing');
+      console.error(err);
+      showToast('Image capture failed');
+    });
+  },120);
+}
+
+/* ── On load: check URL for shared ratings ── */
+function loadFromUrl(){
+  const params=new URLSearchParams(location.search);
+  const r=params.get('r');
+  if(!r) return false;
+  const decoded=decodeRatings(r);
+  if(!decoded) return false;
+  // Only override local if there's something there
+  const hasShared=Object.keys(decoded).length>0;
+  if(!hasShared) return false;
+  // If they have local ratings, ask before overwriting
+  const hasLocal=Object.keys(ratings).length>0;
+  if(hasLocal && !confirm('Open this shared tier list? Your current ratings will be replaced (you can refresh the page without ?r= to get them back if they were saved).')) return false;
+  ratings=decoded;
+  save();
+  return true;
+}
+
 function updateCountdown(){
   const diff=new Date('2026-05-15T00:00:00')-new Date();
   if(diff<=0){['cd-d','cd-h','cd-m','cd-s'].forEach(id=>document.getElementById(id).textContent='00');return;}
@@ -465,7 +654,9 @@ function spawnCrystals(){
   }
 }
 
+const _shared=loadFromUrl();
 buildGrid();spawnCrystals();updateCountdown();setInterval(updateCountdown,1000);
+if(_shared) switchTab('tier');
 </script>
 </body>
 </html>
