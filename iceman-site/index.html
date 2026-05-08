@@ -260,13 +260,12 @@ body::before{
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-/* hide UI chrome during snapshot capture */
-.capturing .tabs,
-.capturing .cta-row,
-.capturing footer,
-.capturing .countdown-bar,
-.capturing .prog-wrap,
-.capturing .prog-label{display:none!important;}
+/* offscreen render container for image capture */
+.capture-stage{
+  position:fixed;left:-99999px;top:0;width:720px;
+  background:#060d18;padding:20px;
+  font-family:'DM Sans',sans-serif;color:var(--txt);
+}
 
 footer{text-align:center;padding:22px;font-size:10px;color:rgba(80,130,170,0.28);letter-spacing:2px;text-transform:uppercase;position:relative;z-index:1;}
 
@@ -585,17 +584,28 @@ function downloadImage(){
     return;
   }
   showToast('Generating image…');
-  document.body.classList.add('capturing');
-  const target=document.getElementById('panel-tier');
-  // Small delay so the toast and class change render before capture
+
+  // Build an offscreen clone containing only what we want in the image:
+  // the snapshot summary + tier list. Live DOM is never touched.
+  const stage=document.createElement('div');
+  stage.className='capture-stage';
+  const snapshot=document.getElementById('snapshot').cloneNode(true);
+  const tierView=document.getElementById('tier-view').cloneNode(true);
+  stage.appendChild(snapshot);
+  stage.appendChild(tierView);
+  document.body.appendChild(stage);
+
+  const cleanup=()=>{ if(stage.parentNode) stage.parentNode.removeChild(stage); };
+
+  // Small delay so the clone fully lays out before capture
   setTimeout(()=>{
-    html2canvas(target,{
+    html2canvas(stage,{
       backgroundColor:'#060d18',
       scale:2,
       useCORS:true,
       logging:false,
     }).then(canvas=>{
-      document.body.classList.remove('capturing');
+      cleanup();
       canvas.toBlob(blob=>{
         const filename='my-drake-tier-list.png';
         const file=new File([blob],filename,{type:'image/png'});
@@ -607,14 +617,12 @@ function downloadImage(){
           navigator.share({
             files:[file],
             title:'My Drake Tier List',
-            text:'My Drake tier list — rank the 6ix God',
           }).then(()=>{
-            showToast('Shared!');
+            showToast('Saved!');
           }).catch(err=>{
-            // User cancelled the share sheet — that's fine, no error
+            // AbortError = user dismissed share sheet, that's fine
             if(err && err.name!=='AbortError'){
               console.error(err);
-              // Fall back to download if share fails for a real reason
               triggerDownload(blob,filename);
             }
           });
@@ -625,7 +633,7 @@ function downloadImage(){
         triggerDownload(blob,filename);
       },'image/png');
     }).catch(err=>{
-      document.body.classList.remove('capturing');
+      cleanup();
       console.error(err);
       showToast('Image capture failed');
     });
