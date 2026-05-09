@@ -267,29 +267,6 @@ body::before{
   font-family:'DM Sans',sans-serif;color:var(--txt);
 }
 
-/* iOS image preview modal (long-press to save to Photos) */
-.img-modal{
-  position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:2000;
-  display:none;flex-direction:column;align-items:center;justify-content:flex-start;
-  padding:18px;overflow-y:auto;-webkit-overflow-scrolling:touch;
-}
-.img-modal.show{display:flex;}
-.img-modal-hint{
-  font-family:'DM Sans',sans-serif;color:#daeeff;font-size:13px;line-height:1.5;
-  text-align:center;margin-bottom:14px;max-width:340px;
-}
-.img-modal-hint b{color:var(--ice2);}
-.img-modal img{
-  max-width:100%;height:auto;border-radius:10px;
-  box-shadow:0 10px 40px rgba(0,0,0,0.6);
-  -webkit-touch-callout:default;touch-callout:default;
-}
-.img-modal-close{
-  margin-top:18px;background:linear-gradient(135deg,var(--ice4),var(--ice3));
-  color:#fff;border:none;border-radius:9px;padding:11px 28px;
-  font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;
-}
-
 footer{text-align:center;padding:22px;font-size:10px;color:rgba(80,130,170,0.28);letter-spacing:2px;text-transform:uppercase;position:relative;z-index:1;}
 
 /* ── RESPONSIVE ── */
@@ -375,12 +352,6 @@ footer{text-align:center;padding:22px;font-size:10px;color:rgba(80,130,170,0.28)
 </div>
 
 <div class="toast" id="toast"></div>
-
-<div class="img-modal" id="img-modal">
-  <div class="img-modal-hint"><b>Long-press the image</b> below, then tap <b>Save to Photos</b></div>
-  <img id="img-modal-img" alt="Your Drake tier list"/>
-  <button class="img-modal-close" onclick="closeImgModal()">Done</button>
-</div>
 
 <footer>Drake Discography Challenge &nbsp;·&nbsp; ICEMAN 2026</footer>
 
@@ -598,15 +569,6 @@ function shareLink(){
   } else { fallback(); }
 }
 
-function isMobile(){
-  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-}
-function isIOS(){
-  // iPhones, iPads (incl. iPadOS reporting as Mac with touch)
-  return /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-    (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
-}
-
 function downloadImage(){
   const scored=ALBUMS.filter(a=>ratings[a.id]!==undefined).length;
   if(scored===0){
@@ -619,99 +581,27 @@ function downloadImage(){
   }
   showToast('Generating image…');
 
-  // Build an offscreen clone containing only what we want in the image:
-  // the snapshot summary + tier list. Live DOM is never touched.
+  // Clone the snapshot + tier list into an offscreen container for capture
   const stage=document.createElement('div');
   stage.className='capture-stage';
-  const snapshot=document.getElementById('snapshot').cloneNode(true);
-  const tierView=document.getElementById('tier-view').cloneNode(true);
-  stage.appendChild(snapshot);
-  stage.appendChild(tierView);
+  stage.appendChild(document.getElementById('snapshot').cloneNode(true));
+  stage.appendChild(document.getElementById('tier-view').cloneNode(true));
   document.body.appendChild(stage);
 
-  let finished=false;
-  const cleanup=()=>{ if(stage.parentNode) stage.parentNode.removeChild(stage); };
-  const fail=(msg)=>{
-    if(finished) return;
-    finished=true;
-    cleanup();
-    showToast(msg||'Image capture failed');
-  };
-
-  // Hard timeout safety net so the user is never stuck on "Generating image…"
-  const safetyTimer=setTimeout(()=>fail('Image capture timed out — try again'),15000);
-
-  // Lower scale on mobile so the resulting image isn't massive (iOS struggles with large data URLs)
-  const useScale=isMobile()?1.5:2;
-
-  // Small delay so the clone fully lays out before capture
-  setTimeout(()=>{
-    html2canvas(stage,{
-      backgroundColor:'#060d18',
-      scale:useScale,
-      logging:false,
-      imageTimeout:8000,
-    }).then(canvas=>{
-      if(finished) return;
-      finished=true;
-      clearTimeout(safetyTimer);
-      cleanup();
-      if(isIOS()){
-        // iOS Safari ignores the `download` attribute on blob links.
-        // Show the rendered image in a modal so the user can long-press → Save to Photos.
-        let dataUrl;
-        try {
-          dataUrl=canvas.toDataURL('image/png');
-        } catch(e) {
-          // Tainted canvas (cross-origin image without CORS) → toDataURL throws
-          console.error('toDataURL failed:',e);
-          showToast('Image generation failed — try again');
-          return;
-        }
-        showImgModal(dataUrl);
-        return;
-      }
-      // Android / desktop: blob download
-      try {
-        canvas.toBlob(blob=>{
-          if(!blob){
-            showToast('Image generation failed — try again');
-            return;
-          }
-          triggerDownload(blob,'my-drake-tier-list.png');
-        },'image/png');
-      } catch(e) {
-        console.error('toBlob failed:',e);
-        showToast('Image generation failed — try again');
-      }
-    }).catch(err=>{
-      console.error('html2canvas error:',err);
-      clearTimeout(safetyTimer);
-      fail('Image capture failed — try again');
-    });
-  },120);
-}
-
-function triggerDownload(blob,filename){
-  const link=document.createElement('a');
-  link.href=URL.createObjectURL(blob);
-  link.download=filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(()=>URL.revokeObjectURL(link.href),1000);
-  showToast('Image downloaded!');
-}
-
-function showImgModal(dataUrl){
-  document.getElementById('img-modal-img').src=dataUrl;
-  document.getElementById('img-modal').classList.add('show');
-  document.body.style.overflow='hidden';
-}
-function closeImgModal(){
-  document.getElementById('img-modal').classList.remove('show');
-  document.getElementById('img-modal-img').src='';
-  document.body.style.overflow='';
+  html2canvas(stage,{backgroundColor:'#060d18',scale:2,logging:false}).then(canvas=>{
+    stage.remove();
+    const link=document.createElement('a');
+    link.href=canvas.toDataURL('image/png');
+    link.download='my-drake-tier-list.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Image saved!');
+  }).catch(err=>{
+    stage.remove();
+    console.error(err);
+    showToast('Image capture failed');
+  });
 }
 
 /* ── On load: check URL for shared ratings ── */
