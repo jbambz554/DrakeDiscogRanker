@@ -267,6 +267,49 @@ body::before{
   font-family:'DM Sans',sans-serif;color:var(--txt);
 }
 
+/* fullscreen snapshot view (mobile screenshot mode) */
+.snap-fullscreen{
+  position:fixed;inset:0;background:#060d18;z-index:2000;
+  display:none;flex-direction:column;
+}
+.snap-fullscreen.show{display:flex;}
+.snap-fs-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;background:rgba(6,12,24,0.95);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.snap-fs-hint{font-size:12px;color:var(--ice2);font-weight:500;letter-spacing:0.5px;}
+.snap-fs-close{
+  background:transparent;color:var(--txt);border:1px solid var(--border-h);
+  border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+}
+.snap-fs-content{
+  flex:1;overflow:hidden;padding:12px;
+  display:flex;flex-direction:column;gap:8px;
+}
+/* compact styles applied inside snapshot to fit everything on one screen */
+.snap-fs-content .snapshot{padding:12px 14px;margin-bottom:10px;}
+.snap-fs-content .snap-stats{gap:6px;}
+.snap-fs-content .snap-stat{padding:7px 4px;}
+.snap-fs-content .snap-stat-val{font-size:18px;}
+.snap-fs-content .snap-stat-lbl{font-size:8px;margin-top:3px;}
+.snap-fs-content .snap-top-img{width:28px;height:28px;}
+.snap-fs-content .snap-title{font-size:18px;}
+.snap-fs-content .tier-view{display:flex;flex-direction:column;gap:4px;flex:1;}
+.snap-fs-content .tier-row{min-height:0;flex:1;}
+.snap-fs-content .tier-label{width:48px;min-width:48px;}
+.snap-fs-content .tier-label-letter{font-size:20px;}
+.snap-fs-content .tier-label-range{font-size:7px;}
+.snap-fs-content .tier-albums{padding:5px 8px;gap:4px;}
+.snap-fs-content .tier-chip{padding:2px 6px;font-size:10px;gap:4px;}
+.snap-fs-content .tier-chip img{width:20px;height:20px;}
+.snap-fs-content .tier-chip-score{font-size:11px;}
+.snap-fs-content .unrated-section{margin-top:8px;padding-top:6px;}
+.snap-fs-content .unrated-label{font-size:8px;margin-bottom:4px;}
+.snap-fs-content .unrated-chip{font-size:9px;padding:2px 6px;}
+
 footer{text-align:center;padding:22px;font-size:10px;color:rgba(80,130,170,0.28);letter-spacing:2px;text-transform:uppercase;position:relative;z-index:1;}
 
 /* ── RESPONSIVE ── */
@@ -346,12 +389,20 @@ footer{text-align:center;padding:22px;font-size:10px;color:rgba(80,130,170,0.28)
   <div class="tier-view" id="tier-view"></div>
   <div class="cta-row">
     <button class="btn" onclick="shareLink()">🔗 Copy Share Link</button>
-    <button class="btn" onclick="downloadImage()">📸 Save Image</button>
+    <button class="btn" id="btn-image" onclick="handleImageBtn()">📸 Save Image</button>
     <button class="btn btn-ghost" onclick="switchTab('rate')">← Back to Rating</button>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="snap-fullscreen" id="snap-fullscreen">
+  <div class="snap-fs-bar">
+    <div class="snap-fs-hint">Take a screenshot now 📸</div>
+    <button class="snap-fs-close" onclick="closeSnapFullscreen()">✕ Close</button>
+  </div>
+  <div class="snap-fs-content" id="snap-fs-content"></div>
+</div>
 
 <footer>Drake Discography Challenge &nbsp;·&nbsp; ICEMAN 2026</footer>
 
@@ -569,25 +620,52 @@ function shareLink(){
   } else { fallback(); }
 }
 
-function downloadImage(){
+function isMobile(){
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+    (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+}
+
+function handleImageBtn(){
   const scored=ALBUMS.filter(a=>ratings[a.id]!==undefined).length;
   if(scored===0){
     showToast('Rate at least one album first!');
     return;
   }
+  if(isMobile()){
+    openSnapFullscreen();
+  } else {
+    downloadImage();
+  }
+}
+
+function openSnapFullscreen(){
+  const content=document.getElementById('snap-fs-content');
+  content.innerHTML='';
+  // Clone the snapshot summary and tier view so it shows their current ratings
+  content.appendChild(document.getElementById('snapshot').cloneNode(true));
+  content.appendChild(document.getElementById('tier-view').cloneNode(true));
+  document.getElementById('snap-fullscreen').classList.add('show');
+  document.body.style.overflow='hidden';
+  window.scrollTo(0,0);
+}
+
+function closeSnapFullscreen(){
+  document.getElementById('snap-fullscreen').classList.remove('show');
+  document.getElementById('snap-fs-content').innerHTML='';
+  document.body.style.overflow='';
+}
+
+function downloadImage(){
   if(typeof html2canvas==='undefined'){
     showToast('Image library still loading — try again');
     return;
   }
   showToast('Generating image…');
-
-  // Clone the snapshot + tier list into an offscreen container for capture
   const stage=document.createElement('div');
   stage.className='capture-stage';
   stage.appendChild(document.getElementById('snapshot').cloneNode(true));
   stage.appendChild(document.getElementById('tier-view').cloneNode(true));
   document.body.appendChild(stage);
-
   html2canvas(stage,{backgroundColor:'#060d18',scale:2,logging:false}).then(canvas=>{
     stage.remove();
     const link=document.createElement('a');
@@ -646,6 +724,11 @@ function spawnCrystals(){
     el.style.color=`rgba(160,220,255,${0.1+Math.random()*0.13})`;
     c.appendChild(el);
   }
+}
+
+// Set the image button label based on platform
+if(isMobile()){
+  document.getElementById('btn-image').textContent='📸 Snapshot for Screenshot';
 }
 
 const _shared=loadFromUrl();
