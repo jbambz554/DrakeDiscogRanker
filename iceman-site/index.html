@@ -629,31 +629,65 @@ function downloadImage(){
   stage.appendChild(tierView);
   document.body.appendChild(stage);
 
+  let finished=false;
   const cleanup=()=>{ if(stage.parentNode) stage.parentNode.removeChild(stage); };
+  const fail=(msg)=>{
+    if(finished) return;
+    finished=true;
+    cleanup();
+    showToast(msg||'Image capture failed');
+  };
+
+  // Hard timeout safety net so the user is never stuck on "Generating image…"
+  const safetyTimer=setTimeout(()=>fail('Image capture timed out — try again'),15000);
+
+  // Lower scale on mobile so the resulting image isn't massive (iOS struggles with large data URLs)
+  const useScale=isMobile()?1.5:2;
 
   // Small delay so the clone fully lays out before capture
   setTimeout(()=>{
     html2canvas(stage,{
       backgroundColor:'#060d18',
-      scale:2,
-      useCORS:true,
+      scale:useScale,
       logging:false,
+      imageTimeout:8000,
     }).then(canvas=>{
+      if(finished) return;
+      finished=true;
+      clearTimeout(safetyTimer);
       cleanup();
       if(isIOS()){
         // iOS Safari ignores the `download` attribute on blob links.
         // Show the rendered image in a modal so the user can long-press → Save to Photos.
-        const dataUrl=canvas.toDataURL('image/png');
+        let dataUrl;
+        try {
+          dataUrl=canvas.toDataURL('image/png');
+        } catch(e) {
+          // Tainted canvas (cross-origin image without CORS) → toDataURL throws
+          console.error('toDataURL failed:',e);
+          showToast('Image generation failed — try again');
+          return;
+        }
         showImgModal(dataUrl);
         return;
       }
-      canvas.toBlob(blob=>{
-        triggerDownload(blob,'my-drake-tier-list.png');
-      },'image/png');
+      // Android / desktop: blob download
+      try {
+        canvas.toBlob(blob=>{
+          if(!blob){
+            showToast('Image generation failed — try again');
+            return;
+          }
+          triggerDownload(blob,'my-drake-tier-list.png');
+        },'image/png');
+      } catch(e) {
+        console.error('toBlob failed:',e);
+        showToast('Image generation failed — try again');
+      }
     }).catch(err=>{
-      cleanup();
-      console.error(err);
-      showToast('Image capture failed');
+      console.error('html2canvas error:',err);
+      clearTimeout(safetyTimer);
+      fail('Image capture failed — try again');
     });
   },120);
 }
