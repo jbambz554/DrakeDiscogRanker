@@ -267,6 +267,29 @@ body::before{
   font-family:'DM Sans',sans-serif;color:var(--txt);
 }
 
+/* iOS image preview modal (long-press to save to Photos) */
+.img-modal{
+  position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:2000;
+  display:none;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:18px;overflow-y:auto;-webkit-overflow-scrolling:touch;
+}
+.img-modal.show{display:flex;}
+.img-modal-hint{
+  font-family:'DM Sans',sans-serif;color:#daeeff;font-size:13px;line-height:1.5;
+  text-align:center;margin-bottom:14px;max-width:340px;
+}
+.img-modal-hint b{color:var(--ice2);}
+.img-modal img{
+  max-width:100%;height:auto;border-radius:10px;
+  box-shadow:0 10px 40px rgba(0,0,0,0.6);
+  -webkit-touch-callout:default;touch-callout:default;
+}
+.img-modal-close{
+  margin-top:18px;background:linear-gradient(135deg,var(--ice4),var(--ice3));
+  color:#fff;border:none;border-radius:9px;padding:11px 28px;
+  font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;
+}
+
 footer{text-align:center;padding:22px;font-size:10px;color:rgba(80,130,170,0.28);letter-spacing:2px;text-transform:uppercase;position:relative;z-index:1;}
 
 /* ── RESPONSIVE ── */
@@ -352,6 +375,12 @@ footer{text-align:center;padding:22px;font-size:10px;color:rgba(80,130,170,0.28)
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="img-modal" id="img-modal">
+  <div class="img-modal-hint"><b>Long-press the image</b> below, then tap <b>Save to Photos</b></div>
+  <img id="img-modal-img" alt="Your Drake tier list"/>
+  <button class="img-modal-close" onclick="closeImgModal()">Done</button>
+</div>
 
 <footer>Drake Discography Challenge &nbsp;·&nbsp; ICEMAN 2026</footer>
 
@@ -572,6 +601,11 @@ function shareLink(){
 function isMobile(){
   return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 }
+function isIOS(){
+  // iPhones, iPads (incl. iPadOS reporting as Mac with touch)
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+}
 
 function downloadImage(){
   const scored=ALBUMS.filter(a=>ratings[a.id]!==undefined).length;
@@ -606,31 +640,15 @@ function downloadImage(){
       logging:false,
     }).then(canvas=>{
       cleanup();
+      if(isIOS()){
+        // iOS Safari ignores the `download` attribute on blob links.
+        // Show the rendered image in a modal so the user can long-press → Save to Photos.
+        const dataUrl=canvas.toDataURL('image/png');
+        showImgModal(dataUrl);
+        return;
+      }
       canvas.toBlob(blob=>{
-        const filename='my-drake-tier-list.png';
-        const file=new File([blob],filename,{type:'image/png'});
-
-        // On mobile, prefer Web Share API → opens native share sheet
-        // (iOS: "Save Image" goes to Photos; Android: "Save to Gallery" / Photos)
-        const canShareFile = navigator.canShare && navigator.canShare({files:[file]});
-        if(isMobile() && navigator.share && canShareFile){
-          navigator.share({
-            files:[file],
-            title:'My Drake Tier List',
-          }).then(()=>{
-            showToast('Saved!');
-          }).catch(err=>{
-            // AbortError = user dismissed share sheet, that's fine
-            if(err && err.name!=='AbortError'){
-              console.error(err);
-              triggerDownload(blob,filename);
-            }
-          });
-          return;
-        }
-
-        // Desktop (or older mobile browsers): standard download
-        triggerDownload(blob,filename);
+        triggerDownload(blob,'my-drake-tier-list.png');
       },'image/png');
     }).catch(err=>{
       cleanup();
@@ -649,6 +667,17 @@ function triggerDownload(blob,filename){
   document.body.removeChild(link);
   setTimeout(()=>URL.revokeObjectURL(link.href),1000);
   showToast('Image downloaded!');
+}
+
+function showImgModal(dataUrl){
+  document.getElementById('img-modal-img').src=dataUrl;
+  document.getElementById('img-modal').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function closeImgModal(){
+  document.getElementById('img-modal').classList.remove('show');
+  document.getElementById('img-modal-img').src='';
+  document.body.style.overflow='';
 }
 
 /* ── On load: check URL for shared ratings ── */
